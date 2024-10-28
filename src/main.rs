@@ -4,14 +4,18 @@ use std::arch::naked_asm;
 
 const DEFAULT_STACK_SIZE: usize = 4096;
 const MAX_THREADS: usize = 5;
+
+/// Pointer to our runtime, we're only setting this variable on initialization.
 static mut RUNTIME: usize = 0;
 
-/// Runtime schedule and switch threads. current is the id of thread which is currently running.
+/// Runtime schedule and switch threads.
 pub struct Runtime {
     threads: Vec<Thread>,
+    // the id of the currently running thread
     current: usize,
 }
 
+/// Green thread
 struct Thread {
     id: usize,
     stack: Vec<u8>,
@@ -19,9 +23,10 @@ struct Thread {
     state: State,
 }
 
+/// Thread state
 #[derive(PartialEq, Eq, Debug)]
 enum State {
-    // available and ready to be assigned a task if needed
+    // ready to be assigned a task if needed
     Available,
     // running
     Running,
@@ -30,14 +35,16 @@ enum State {
 }
 
 #[derive(Debug, Default)]
-#[repr(C)] // not strictly needed but Rust ABI is not guaranteed to be stable
+#[repr(C)]
 pub struct ThreadContext {
-    // 15 u64
-    x1: u64,  //ra: return addres
-    x2: u64,  //sp
-    x8: u64,  //s0,fp
-    x9: u64,  //s1
-    x18: u64, //x18-27: s2-11
+    // ra (return address)
+    x1: u64,
+    // sp (stack pointer)
+    x2: u64,
+    // s0 - s11 (callee saved registers)
+    x8: u64,
+    x9: u64,
+    x18: u64,
     x19: u64,
     x20: u64,
     x21: u64,
@@ -47,7 +54,8 @@ pub struct ThreadContext {
     x25: u64,
     x26: u64,
     x27: u64,
-    nx1: u64, //new return addres
+    // new return address
+    nx1: u64,
 }
 
 impl Thread {
@@ -96,19 +104,34 @@ impl Runtime {
         }
     }
 
-    /// start the runtime
+    /// Start running our `Runtime`. It will continually call `t_yield()` until
+    /// it returns false which means that there is no more work to do.
     pub fn run(&mut self) {
         while self.t_yield() {}
         println!("All threads finished!");
     }
 
+    /// Return function that we call when the thread is finished.
+    ///
+    /// The user of our threads does not call this, we set up our stack so this
+    /// is called when the task is done.
     fn t_return(&mut self) {
+        // If the calling thread is the base_thread we don't do anything our `Runtime`
+        // will call yield for us on the base thread.
+        //
+        // If it's called from a spawned thread we know it's finished since all
+        // threads have a guard function on top of their stack and the only place
+        // this function is called is on our guard function.
         if self.current != 0 {
+            // Set state to `Available` letting the runtime know it's ready to be assigned a new task.
             self.threads[self.current].state = State::Available;
+            // Immediately call `t_yield` which will schedule a new thread to be run.
             self.t_yield();
         }
     }
 
+    /// Schedule a new thread to be run.
+    #[inline(never)]
     fn t_yield(&mut self) -> bool {
         let mut pos = self.current;
         while self.threads[pos].state != State::Ready {
@@ -136,23 +159,20 @@ impl Runtime {
         self.threads.len() > 0
     }
 
+    /// Spawn a new task to be executed by a green thread in runtime
     pub fn spawn(&mut self, f: fn()) {
         let available = self
             .threads
             .iter_mut()
             .find(|t| t.state == State::Available)
-            .expect("no available thread.");
+            .expect("no available green thread.");
 
-        println!("RUNTIME: spawning thread {}", available.id);
+        println!("RUNTIME: spawning task on green thread {}", available.id);
         let size = available.stack.len();
         unsafe {
             let s_ptr = available.stack.as_mut_ptr().offset(size as isize);
 
-            // make sure our stack itself is 8 byte aligned - it will always
-            // offset to a lower memory address. Since we know we're at the "high"
-            // memory address of our allocated space, we know that offsetting to
-            // a lower one will be a valid address (given that we actually allocated)
-            // enough space to actually get an aligned pointer in the first place).
+            // make sure our stack itself is 8 byte aligned
             let s_ptr = (s_ptr as usize & !7) as *mut u8;
 
             available.ctx.x1 = guard as u64; //ctx.x1  is old return address
@@ -216,48 +236,32 @@ unsafe extern "C" fn switch(old: *mut ThreadContext, new: *const ThreadContext) 
         ld t0, 0x70(a1)
 
         jr t0
-    ",
-    );
+    ");
 }
 
 fn main() {
     let mut runtime = Runtime::new();
     runtime.init();
     runtime.spawn(|| {
-        println!("THREAD 1 STARTING");
-        let id = 1;
-        for i in 0..4 {
-            println!("thread: {} counter: {}", id, i);
-            yield_thread();
-        }
-        println!("THREAD 1 FINISHED");
+        test_task(1);
     });
     runtime.spawn(|| {
-        println!("THREAD 2 STARTING");
-        let id = 2;
-        for i in 0..8 {
-            println!("thread: {} counter: {}", id, i);
-            yield_thread();
-        }
-        println!("THREAD 2 FINISHED");
+        test_task(2);
     });
     runtime.spawn(|| {
-        println!("THREAD 3 STARTING");
-        let id = 3;
-        for i in 0..12 {
-            println!("thread: {} counter: {}", id, i);
-            yield_thread();
-        }
-        println!("THREAD 3 FINISHED");
+        test_task(3);
     });
     runtime.spawn(|| {
-        println!("THREAD 4 STARTING");
-        let id = 4;
-        for i in 0..16 {
-            println!("thread: {} counter: {}", id, i);
-            yield_thread();
-        }
-        println!("THREAD 4 FINISHED");
+        test_task(4);
     });
     runtime.run();
+}
+
+fn test_task(task_id: usize) {
+    println!("TASK {} STARTING", task_id);
+    for i in 0..4 * task_id {
+        println!("task: {} counter: {}", task_id, i);
+        yield_thread();
+    }
+    println!("TASK {} FINISHED", task_id);
 }

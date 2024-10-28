@@ -13,7 +13,12 @@ sudo apt install qemu-system-riscv64
 sudo apt install qemu-user-static
 ```
 
-3. build and run
+3. add target
+```
+rustup target add riscv64gc-unknown-linux-gnu
+```
+
+4. build and run
 ```
 cargo run
 ```
