@@ -1,5 +1,5 @@
 # Green threads / stackful coroutine implemented in 200 lines of Rust
-Running on RISC-V 64 Linux using Qemu.
+Port "Green threads explained in 200 lines of Rust" tutorial (has been deleted) to RISCV64 Linux.
 
 ## Get started on Ubuntu 24.04
 1. install risc-v toolchain
