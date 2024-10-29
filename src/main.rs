@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 /// Default stack size for green thread
 const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
 /// Max threads for user tasks running
-const MAX_THREADS: usize = 4;
+const MAX_THREADS: usize = 3;
 
 /// Pointer to our runtime, we're only setting this variable on initialization
 static mut RUNTIME: usize = 0;
@@ -172,12 +172,13 @@ impl Runtime {
         unsafe {
             let s_ptr = available.stack.as_mut_ptr().offset(size as isize);
 
-            // make sure our stack itself is 8 byte aligned
+            // make sure our stack itself is 8 byte aligned,
+            // risc-v ld/sd instructions need address 8 byte alignment
             let s_ptr = (s_ptr as usize & !7) as *mut u8;
 
             available.ctx.ra = task_return as u64; // task return address
             available.ctx.sp = s_ptr as u64; // stack pointer
-            available.ctx.entry = f as u64; // task entry
+            available.ctx.entry = f as u64; // task entry address
         }
         available.state = State::Ready;
     }
@@ -264,11 +265,8 @@ fn main() {
     runtime.spawn(|| {
         test_task(3);
     });
-    runtime.spawn(|| {
-        test_task(4);
-    });
     runtime.run();
-    assert_eq!(FINISHED_TASK_COUNT.load(Ordering::SeqCst), 4);
+    assert_eq!(FINISHED_TASK_COUNT.load(Ordering::SeqCst), 3);
 }
 
 fn test_task(task_id: usize) {
