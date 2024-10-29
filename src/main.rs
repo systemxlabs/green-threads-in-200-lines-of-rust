@@ -3,8 +3,10 @@
 use std::arch::naked_asm;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+/// Default stack size for green thread
 const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
-const MAX_THREADS: usize = 5;
+/// Max threads for user tasks running
+const MAX_THREADS: usize = 4;
 
 /// Pointer to our runtime, we're only setting this variable on initialization.
 static mut RUNTIME: usize = 0;
@@ -80,13 +82,14 @@ impl Thread {
 }
 
 impl Runtime {
-    /// Initialize with a base thread.
     pub fn new() -> Self {
+        // Base thread is for runtime running
         let base_thread_id = 0;
         let base_thread = Thread::new_with_state(base_thread_id, State::Running);
 
+        // These threads is for user tasks running
         let mut threads = vec![base_thread];
-        let mut available_threads = (1..MAX_THREADS).map(|i| Thread::new(i)).collect();
+        let mut available_threads = (1..MAX_THREADS + 1).map(|i| Thread::new(i)).collect();
         threads.append(&mut available_threads);
 
         Runtime {
@@ -117,40 +120,36 @@ impl Runtime {
     /// The user of our threads does not call this, we set up our stack so this
     /// is called when the task is done.
     fn t_return(&mut self) {
-        // If the calling thread is the base_thread we don't do anything our `Runtime`
-        // will call yield for us on the base thread.
-        //
-        // If it's called from a spawned thread we know it's finished since all
-        // threads have a guard function on top of their stack and the only place
-        // this function is called is on our guard function.
-        if self.current != 0 {
-            // Set state to `Available` letting the runtime know it's ready to be assigned a new task.
-            self.threads[self.current].state = State::Available;
-            // Immediately call `t_yield` which will schedule a new thread to be run.
-            self.t_yield();
-        }
+        // Mark current thread available, so it can be assigned a new task
+        self.threads[self.current].state = State::Available;
+
+        self.t_schedule();
     }
 
     /// Suspend current thread and schedule a new thread to be run.
-    #[inline(never)]
     fn t_yield(&mut self) -> bool {
-        // Find next ready thread to execute
-        let mut pos = self.current;
+        // Mark current thread ready, so it can be scheduled again
+        self.threads[self.current].state = State::Ready;
+
+        self.t_schedule()
+    }
+
+    /// Schedule a new thread to be run
+    fn t_schedule(&mut self) -> bool {
+        let thread_count = self.threads.len();
+
+        // Find next ready thread
+        let mut pos = (self.current + 1) % thread_count;
         while self.threads[pos].state != State::Ready {
-            pos += 1;
-            if pos == self.threads.len() {
-                pos = 0;
-            }
+            pos = (pos + 1) % thread_count;
+
+            // If no other ready thread, means all user tasks finished
+            // so current thread must be base thread
             if pos == self.current {
                 return false;
             }
         }
         println!("RUNTIME: schedule next thread {} to be run", pos);
-
-        // Mark current thread ready, so it can be scheduled again
-        if self.threads[self.current].state != State::Available {
-            self.threads[self.current].state = State::Ready;
-        }
 
         // Switch to a new thread
         self.threads[pos].state = State::Running;
@@ -160,8 +159,7 @@ impl Runtime {
             switch(&mut self.threads[old_pos].ctx, &self.threads[pos].ctx);
         }
 
-        // Prevents compiler from optimizing our code away on Windows.
-        self.threads.len() > 0
+        true
     }
 
     /// Spawn a new task to be executed by a green thread in runtime
@@ -195,7 +193,8 @@ fn guard() {
     }
 }
 
-pub fn yield_thread() {
+/// Call yield from an arbitrary place in user task code
+pub fn r#yield() {
     unsafe {
         let rt_ptr = RUNTIME as *mut Runtime;
         (*rt_ptr).t_yield();
@@ -241,7 +240,8 @@ unsafe extern "C" fn switch(old: *mut ThreadContext, new: *const ThreadContext) 
         ld t0, 0x70(a1)
 
         jr t0
-    ");
+    "
+    );
 }
 
 static FINISHED_TASK_COUNT: AtomicUsize = AtomicUsize::new(0);
@@ -269,7 +269,7 @@ fn test_task(task_id: usize) {
     println!("TASK {} STARTING", task_id);
     for i in 0..4 * task_id {
         println!("task: {} counter: {}", task_id, i);
-        yield_thread();
+        r#yield();
     }
     FINISHED_TASK_COUNT.fetch_add(1, Ordering::SeqCst);
     println!("TASK {} FINISHED", task_id);

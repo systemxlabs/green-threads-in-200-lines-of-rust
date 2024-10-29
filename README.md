@@ -1,5 +1,5 @@
 # Green threads / stackful coroutine implemented in 200 lines of Rust
-Port "Green threads explained in 200 lines of Rust" tutorial (has been deleted) to RISCV64 Linux.
+Port "Green threads explained in 200 lines of Rust" tutorial (original [post](https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust) and [repo](https://github.com/cfsamson/example-greenthreads) have been deleted) to RISCV64 Linux and refactor code for better readability.
 
 ## Get started on Ubuntu 24.04
 1. install risc-v toolchain
@@ -23,7 +23,7 @@ rustup target add riscv64gc-unknown-linux-gnu
 cargo run
 ```
 
-参考：
+Reference
 1. https://doc.rust-lang.org/nightly/rustc/platform-support/riscv64gc-unknown-linux-gnu.html
 2. https://github.com/ziyi-yan/green-threads
 3. https://github.com/wonbyte/green_threads
