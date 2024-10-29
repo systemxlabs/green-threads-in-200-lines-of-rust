@@ -1,5 +1,7 @@
 # Green threads / stackful coroutine implemented in 200 lines of Rust
-Port "Green threads explained in 200 lines of Rust" tutorial (original [post](https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust) and [repo](https://github.com/cfsamson/example-greenthreads) have been deleted) to RISCV64 Linux and refactor code for better readability.
+- Port "Green threads explained in 200 lines of Rust" tutorial to RISCV64 Linux (original [post](https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust) and [repo](https://github.com/cfsamson/example-greenthreads) have been deleted)
+- Refactor code for better readability
+- Add another way (`global_asm!`) to implement switch function
 
 ## Get started on Ubuntu 24.04
 1. install risc-v toolchain
