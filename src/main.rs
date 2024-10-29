@@ -8,10 +8,10 @@ const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
 /// Max threads for user tasks running
 const MAX_THREADS: usize = 4;
 
-/// Pointer to our runtime, we're only setting this variable on initialization.
+/// Pointer to our runtime, we're only setting this variable on initialization
 static mut RUNTIME: usize = 0;
 
-/// Runtime schedule and switch threads.
+/// Runtime schedule and switch threads
 pub struct Runtime {
     threads: Vec<Thread>,
     // the id of the currently running thread
@@ -126,7 +126,7 @@ impl Runtime {
         self.t_schedule();
     }
 
-    /// Suspend current thread and schedule a new thread to be run.
+    /// Suspend current thread and schedule a new thread to be run
     fn t_yield(&mut self) -> bool {
         // Mark current thread ready, so it can be scheduled again
         self.threads[self.current].state = State::Ready;
@@ -178,7 +178,7 @@ impl Runtime {
             // make sure our stack itself is 8 byte aligned
             let s_ptr = (s_ptr as usize & !7) as *mut u8;
 
-            available.ctx.ra = guard as u64; // task return address
+            available.ctx.ra = task_return as u64; // task return address
             available.ctx.sp = s_ptr as u64; // stack pointer
             available.ctx.entry = f as u64; // task entry
         }
@@ -186,7 +186,8 @@ impl Runtime {
     }
 }
 
-fn guard() {
+/// When user task completed, then will jump to this function to return
+fn task_return() {
     unsafe {
         let rt_ptr = RUNTIME as *mut Runtime;
         (*rt_ptr).t_return();
