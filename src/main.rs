@@ -115,10 +115,7 @@ impl Runtime {
         println!("All tasks finished!");
     }
 
-    /// Return function that we call when the thread is finished.
-    ///
-    /// The user of our threads does not call this, we set up our stack so this
-    /// is called when the task is done.
+    /// User tasks call this function to return and schedule a new thread to be run
     fn t_return(&mut self) {
         // Mark current thread available, so it can be assigned a new task
         self.threads[self.current].state = State::Available;
