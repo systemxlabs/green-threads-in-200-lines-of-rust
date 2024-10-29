@@ -1,8 +1,9 @@
 #![feature(naked_functions)]
 
 use std::arch::naked_asm;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
-const DEFAULT_STACK_SIZE: usize = 4096;
+const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
 const MAX_THREADS: usize = 5;
 
 /// Pointer to our runtime, we're only setting this variable on initialization.
@@ -108,7 +109,7 @@ impl Runtime {
     /// it returns false which means that there is no more work to do.
     pub fn run(&mut self) {
         while self.t_yield() {}
-        println!("All threads finished!");
+        println!("All tasks finished!");
     }
 
     /// Return function that we call when the thread is finished.
@@ -130,9 +131,10 @@ impl Runtime {
         }
     }
 
-    /// Schedule a new thread to be run.
+    /// Suspend current thread and schedule a new thread to be run.
     #[inline(never)]
     fn t_yield(&mut self) -> bool {
+        // Find next ready thread to execute
         let mut pos = self.current;
         while self.threads[pos].state != State::Ready {
             pos += 1;
@@ -143,18 +145,21 @@ impl Runtime {
                 return false;
             }
         }
+        println!("RUNTIME: schedule next thread {} to be run", pos);
 
+        // Mark current thread ready, so it can be scheduled again
         if self.threads[self.current].state != State::Available {
             self.threads[self.current].state = State::Ready;
         }
 
+        // Switch to a new thread
         self.threads[pos].state = State::Running;
         let old_pos = self.current;
         self.current = pos;
-
         unsafe {
             switch(&mut self.threads[old_pos].ctx, &self.threads[pos].ctx);
         }
+
         // Prevents compiler from optimizing our code away on Windows.
         self.threads.len() > 0
     }
@@ -200,7 +205,7 @@ pub fn yield_thread() {
 #[naked]
 #[no_mangle]
 unsafe extern "C" fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
-    // a0: _old, a1: _new
+    // a0: old, a1: new
     naked_asm!(
         "
         sd x1, 0x00(a0)
@@ -239,6 +244,8 @@ unsafe extern "C" fn switch(old: *mut ThreadContext, new: *const ThreadContext) 
     ");
 }
 
+static FINISHED_TASK_COUNT: AtomicUsize = AtomicUsize::new(0);
+
 fn main() {
     let mut runtime = Runtime::new();
     runtime.init();
@@ -255,6 +262,7 @@ fn main() {
         test_task(4);
     });
     runtime.run();
+    assert_eq!(FINISHED_TASK_COUNT.load(Ordering::SeqCst), 4);
 }
 
 fn test_task(task_id: usize) {
@@ -263,5 +271,6 @@ fn test_task(task_id: usize) {
         println!("task: {} counter: {}", task_id, i);
         yield_thread();
     }
+    FINISHED_TASK_COUNT.fetch_add(1, Ordering::SeqCst);
     println!("TASK {} FINISHED", task_id);
 }
