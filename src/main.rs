@@ -1,6 +1,6 @@
 #![feature(naked_functions)]
 
-use std::arch::{naked_asm, global_asm};
+use std::arch::{global_asm, naked_asm};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Default stack size for green thread
@@ -248,7 +248,6 @@ extern "C" {
     fn __switch(old: *mut ThreadContext, new: *const ThreadContext);
 }
 global_asm!(include_str!("switch.S"));
-
 
 static FINISHED_TASK_COUNT: AtomicUsize = AtomicUsize::new(0);
 
