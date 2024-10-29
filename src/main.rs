@@ -1,6 +1,6 @@
 #![feature(naked_functions)]
 
-use std::arch::naked_asm;
+use std::arch::{naked_asm, global_asm};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Default stack size for green thread
@@ -199,6 +199,7 @@ pub fn r#yield() {
     };
 }
 
+/// We could use naked function to implement switch function
 #[naked]
 #[no_mangle]
 unsafe extern "C" fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
@@ -241,6 +242,13 @@ unsafe extern "C" fn switch(old: *mut ThreadContext, new: *const ThreadContext) 
     "
     );
 }
+
+extern "C" {
+    /// We could also use global_asm macro to implement switch function
+    fn __switch(old: *mut ThreadContext, new: *const ThreadContext);
+}
+global_asm!(include_str!("switch.S"));
+
 
 static FINISHED_TASK_COUNT: AtomicUsize = AtomicUsize::new(0);
 
