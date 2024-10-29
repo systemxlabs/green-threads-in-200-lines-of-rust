@@ -40,25 +40,25 @@ enum State {
 #[derive(Debug, Default)]
 #[repr(C)]
 pub struct ThreadContext {
-    // ra (return address)
-    x1: u64,
-    // sp (stack pointer)
-    x2: u64,
+    // return address
+    ra: u64,
+    // stack pointer
+    sp: u64,
     // s0 - s11 (callee saved registers)
-    x8: u64,
-    x9: u64,
-    x18: u64,
-    x19: u64,
-    x20: u64,
-    x21: u64,
-    x22: u64,
-    x23: u64,
-    x24: u64,
-    x25: u64,
-    x26: u64,
-    x27: u64,
-    // new return address
-    nx1: u64,
+    s0: u64,
+    s1: u64,
+    s2: u64,
+    s3: u64,
+    s4: u64,
+    s5: u64,
+    s6: u64,
+    s7: u64,
+    s8: u64,
+    s9: u64,
+    s10: u64,
+    s11: u64,
+    // task entry
+    entry: u64,
 }
 
 impl Thread {
@@ -178,9 +178,9 @@ impl Runtime {
             // make sure our stack itself is 8 byte aligned
             let s_ptr = (s_ptr as usize & !7) as *mut u8;
 
-            available.ctx.x1 = guard as u64; //ctx.x1  is old return address
-            available.ctx.nx1 = f as u64; //ctx.nx2 is new return address
-            available.ctx.x2 = s_ptr.offset(-32) as u64; //cxt.x2 is sp
+            available.ctx.ra = guard as u64; // task return address
+            available.ctx.sp = s_ptr as u64; // stack pointer
+            available.ctx.entry = f as u64; // task entry
         }
         available.state = State::Ready;
     }
@@ -207,36 +207,36 @@ unsafe extern "C" fn switch(old: *mut ThreadContext, new: *const ThreadContext) 
     // a0: old, a1: new
     naked_asm!(
         "
-        sd x1, 0x00(a0)
-        sd x2, 0x08(a0)
-        sd x8, 0x10(a0)
-        sd x9, 0x18(a0)
-        sd x18, 0x20(a0)
-        sd x19, 0x28(a0)
-        sd x20, 0x30(a0)
-        sd x21, 0x38(a0)
-        sd x22, 0x40(a0)
-        sd x23, 0x48(a0)
-        sd x24, 0x50(a0)
-        sd x25, 0x58(a0)
-        sd x26, 0x60(a0)
-        sd x27, 0x68(a0)
-        sd x1, 0x70(a0)
+        sd ra, 0x00(a0)
+        sd sp, 0x08(a0)
+        sd s0, 0x10(a0)
+        sd s1, 0x18(a0)
+        sd s2, 0x20(a0)
+        sd s3, 0x28(a0)
+        sd s4, 0x30(a0)
+        sd s5, 0x38(a0)
+        sd s6, 0x40(a0)
+        sd s7, 0x48(a0)
+        sd s8, 0x50(a0)
+        sd s9, 0x58(a0)
+        sd s10, 0x60(a0)
+        sd s11, 0x68(a0)
+        sd ra, 0x70(a0)
 
-        ld x1, 0x00(a1)
-        ld x2, 0x08(a1)
-        ld x8, 0x10(a1)
-        ld x9, 0x18(a1)
-        ld x18, 0x20(a1)
-        ld x19, 0x28(a1)
-        ld x20, 0x30(a1)
-        ld x21, 0x38(a1)
-        ld x22, 0x40(a1)
-        ld x23, 0x48(a1)
-        ld x24, 0x50(a1)
-        ld x25, 0x58(a1)
-        ld x26, 0x60(a1)
-        ld x27, 0x68(a1)
+        ld ra, 0x00(a1)
+        ld sp, 0x08(a1)
+        ld s0, 0x10(a1)
+        ld s1, 0x18(a1)
+        ld s2, 0x20(a1)
+        ld s3, 0x28(a1)
+        ld s4, 0x30(a1)
+        ld s5, 0x38(a1)
+        ld s6, 0x40(a1)
+        ld s7, 0x48(a1)
+        ld s8, 0x50(a1)
+        ld s9, 0x58(a1)
+        ld s10, 0x60(a1)
+        ld s11, 0x68(a1)
         ld t0, 0x70(a1)
 
         jr t0
