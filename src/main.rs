@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 /// Default stack size for green thread
 const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
 /// Max threads for user tasks running
-const MAX_THREADS: usize = 3;
+const MAX_THREADS: usize = 4;
 
 /// Pointer to our runtime, we're only setting this variable on initialization
 static mut RUNTIME: usize = 0;

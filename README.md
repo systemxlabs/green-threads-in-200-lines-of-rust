@@ -4,25 +4,103 @@
 - Add another way (`global_asm!`) to implement switch function
 
 ## Get started on Ubuntu 24.04
-1. install risc-v toolchain
+1.install risc-v toolchain
 ```
 sudo apt install gcc-riscv64-linux-gnu g++-riscv64-linux-gnu libc6-dev-riscv64-cross
 ```
 
-2. install qemu
+2.install qemu
 ```
 sudo apt install qemu-system-riscv64
 sudo apt install qemu-user-static
 ```
 
-3. add target
+3.add target
 ```
 rustup target add riscv64gc-unknown-linux-gnu
 ```
 
-4. build and run
+4.build and run
 ```
 cargo run
+```
+
+output
+```
+RUNTIME: spawning task on green thread 1
+RUNTIME: spawning task on green thread 2
+RUNTIME: spawning task on green thread 3
+RUNTIME: schedule next thread 1 to be run
+TASK 1 STARTING
+task: 1 counter: 0
+RUNTIME: schedule next thread 2 to be run
+TASK 2 STARTING
+task: 2 counter: 0
+RUNTIME: schedule next thread 3 to be run
+TASK 3 STARTING
+task: 3 counter: 0
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 1 to be run
+task: 1 counter: 1
+RUNTIME: schedule next thread 2 to be run
+task: 2 counter: 1
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 1
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 1 to be run
+task: 1 counter: 2
+RUNTIME: schedule next thread 2 to be run
+task: 2 counter: 2
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 2
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 1 to be run
+task: 1 counter: 3
+RUNTIME: schedule next thread 2 to be run
+task: 2 counter: 3
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 3
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 1 to be run
+TASK 1 FINISHED
+RUNTIME: schedule next thread 2 to be run
+task: 2 counter: 4
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 4
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 2 to be run
+task: 2 counter: 5
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 5
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 2 to be run
+task: 2 counter: 6
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 6
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 2 to be run
+task: 2 counter: 7
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 7
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 2 to be run
+TASK 2 FINISHED
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 8
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 9
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 10
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 3 to be run
+task: 3 counter: 11
+RUNTIME: schedule next thread 0 to be run
+RUNTIME: schedule next thread 3 to be run
+TASK 3 FINISHED
+RUNTIME: schedule next thread 0 to be run
+All tasks finished!
 ```
 
 Reference
