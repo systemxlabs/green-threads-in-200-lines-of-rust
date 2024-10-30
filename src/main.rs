@@ -221,6 +221,8 @@ unsafe extern "C" fn switch(old: *mut ThreadContext, new: *const ThreadContext) 
         sd s9, 11*8(a0)
         sd s10, 12*8(a0)
         sd s11, 13*8(a0)
+        // When user task scheduled for the second time,
+        // overwrite task entry address with the return address
         sd ra, 14*8(a0)
 
         ld ra, 0*8(a1)
@@ -237,6 +239,8 @@ unsafe extern "C" fn switch(old: *mut ThreadContext, new: *const ThreadContext) 
         ld s9, 11*8(a1)
         ld s10, 12*8(a1)
         ld s11, 13*8(a1)
+        // When user task scheduled for the first time, t0 will be task entry address.
+        // After that, t0 will be return address
         ld t0, 14*8(a1)
 
         // pseudo instruction, actually is jalr x0, 0(t0)
