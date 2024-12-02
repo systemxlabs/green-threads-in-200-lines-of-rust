@@ -87,7 +87,7 @@ impl Runtime {
         let base_thread_id = 0;
         let base_thread = Thread::new_with_state(base_thread_id, State::Running);
 
-        // These threads is for user tasks running
+        // These threads are for user tasks running
         let mut threads = vec![base_thread];
         let mut available_threads = (1..MAX_THREADS + 1).map(|i| Thread::new(i)).collect();
         threads.append(&mut available_threads);
