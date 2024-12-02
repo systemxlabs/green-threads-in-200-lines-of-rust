@@ -3,7 +3,7 @@
 - Refactor code for better readability
 - Add another way (`global_asm!`) to implement switch function
 
-Chinese blog post: [200 行 Rust 代码实现绿色线程 / 有栈协程](https://systemxlabs.github.io/blog/green-threads-in-200-lines-of-rust/)
+Chinese blog post: [200 行 Rust 代码实现绿色线程 / 有栈协程](https://systemxlabs.github.io/blog/green-threads-in-200-lines-of-rust/) and video: [b 站](https://www.bilibili.com/video/BV14EUCY8Efo/).
 
 ## Get started on Ubuntu 24.04
 1.install risc-v toolchain
